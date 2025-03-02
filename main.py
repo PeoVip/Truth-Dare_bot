@@ -6,7 +6,7 @@ import json
 import datetime
 
 # Thay thế YOUR_TOKEN bằng token bot Discord của bạn
-TOKEN = 'YOUR_TOKEN'
+TOKEN = 'MTM0NTY2NTE1ODQyMDEwNzMwNg.GC4Jcz.Exc8ZZEzy-3omJLpa6Qh75LxX5gA3MW5vqM79w'
 
 # Tiền tố lệnh
 PREFIX = '!'
