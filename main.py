@@ -1,402 +1,152 @@
 import discord
-import random
 from discord.ext import commands
-from keep_alive import keep_alive 
+import random
+import asyncio
+import json
+import datetime
 
-intents = discord.Intents.default()
-intents.message_content = True 
+# Thay thế YOUR_TOKEN bằng token bot Discord của bạn
+TOKEN = 'YOUR_TOKEN'
 
-bot = commands.Bot(command_prefix='blu ', intents=intents)
+# Tiền tố lệnh
+PREFIX = '!'
 
-truth_norm = [
-    "Lần cuối cùng bạn nói dối là khi nào?",
-    "Nỗi sợ lớn nhất của bạn là gì?",
-    "Nếu được chọn 1 người trong discord để đi date bạn sẽ chọn ai?",
-    "Bạn đang phải lòng ai?",
-    "Kể về lần bị người khác lừa khiến bạn buồn nhất?",
-    "Điều hèn hạ nhất mà bạn đã làm là gì?",
-    "Nụ hôn đầu tiên của bạn như thế nào?",
-    "Ai là người gần đây nhất mà bạn theo dõi trên mạng xã hội?",
-    "Sự kiện điên rồ nhất mà bạn từng tham dự là gì?",
-    "Lần cuối cùng bạn tè là khi nào?",
-    "Giấc mơ tồi tệ nhất mà bạn từng có là gì?",
-    "Tại sao mối quan hệ cuối cùng của bạn lại kết thúc?",
-    "Điều đáng xấu hổ nhất đã xảy ra với bạn trong năm nay là gì?",
-    "Thói quen nào mà bạn dường như không thể bỏ được?",
-    "Người nổi tiếng mà bạn thích là ai?",
-    "Điều bạn ghét nhất ở người bạn thân nhất của mình là gì?",
-    "Bạn không thích điều gì ở bạn trai hay bạn gái của mình?",
-    "Bạn đã từng quan hệ với người cùng giới chưa?",
-    "Bí mật mà bạn chưa từng nói với ai trước đây là gì?",
-    "Bạn đã hôn bao nhiêu người rồi?",
-    "Có ai từng vô tình nhìn thấy bạn khỏa thân chưa? Ai?",
-    "Bạn đã bao giờ ra ngoài mà không mặc áo ngực và đồ lót chưa?",
-    "Mối tình đầu của bạn là ai?",
-    "Bạn có ngừng nói chuyện với tất cả bạn bè của mình vì một trăm nghìn đồng không?",
-    "Bạn đã từng phạm tội chưa? Nếu có thì đó là tội gì?",
-    "Bạn đã bao giờ vào tù chưa?",
-    "Mối tình đầu của bạn là ai?",
-    "Bạn có bao giờ lừa dối người yêu của mình nếu họ nói rằng điều đó ổn không?",
-    "Người nào trong discord khiến bạn không có cảm tình?",
-    "Bạn đã bao giờ phải lòng giáo viên/giáo sư của mình chưa?",
-    "Bạn đã bao giờ phải lòng mẹ của bạn thân hoặc ai đó thường lớn tuổi hơn bạn nhiều chưa?",
-    "Nếu chỉ được chọn 1 người để ra đảo hoang ở thì bạn chọn ai trong discord?",
-    "Loại nhạc đáng xấu hổ nhất mà bạn thích nghe là gì?",
-    "Bạn nghĩ ai trong discord này ai sẽ là người không thích hợp để hẹn hò, kể ra 3 người đó?",
-    "Bạn nghĩ ai trong discord này ai sẽ là người thích hợp để hẹn hò nhất?",
-    "Trải nghiệm thân mật tồi tệ nhất mà bạn từng có là gì?",
-    "Nếu bạn là siêu anh hùng, sức mạnh của bạn sẽ là gì?",
-    "Bạn đã từng biểu diễn thoát y cho ai trước đây chưa?",
-    "Bạn đã bao giờ ăn đồ ăn trên sàn chưa?",
-    "Bạn đã bao giờ gian lận trong bài kiểm tra chưa?",
-    "Bạn đã bao giờ bị đình chỉ học chưa?",
-    "Rắc rối nhất mà bạn từng gặp phải ở trường là gì?",
-    "Rắc rối nhất mà bạn từng gặp phải ở nhà hoặc với bố mẹ là gì?",
-    "Đã có lúc nào ai đó thực sự phản bội lòng tin của bạn?",
-    "Hãy kể về một lần bạn thất bại trong cuộc sống.",
-    "Hãy kể cho chúng tôi nghe về lần bạn thực sự say rượu.",
-    "Bạn đã bao giờ lan truyền tin đồn chưa?",
-    "Bạn đã bao giờ thân mật ở nơi công cộng chưa?",
-    "Điều gì bạn từng làm khiến bây giờ bạn rùng mình?",
-    "Bạn có hát trong khi tắm không?",
-    "Lần cuối cùng bạn nôn là khi nào?",
-    "Lần cuối cùng bạn khóc là khi nào?",
-    "Bạn đã bao giờ cười đến mức phát khóc chưa?",
-    "Bạn đã bao giờ khóc khi xem một chương trình truyền hình hay một bộ phim chưa?",
-    "Điều xấu hổ nhất mà bạn từng làm trước mặt người mình thích là gì?",
-    "Bạn tìm kiếm điều gì ở một người yêu tương lai?",
-    "Would you rather be rich or famous? You cannot be both.",
-    "What would you do with a million dollars?",
-    "Could you survive without any phone or internet for a month?",
-    "What is the most that you have ever had to drink?",
-    "What is the longest amount of time that you have ever been awake?",
-    "If you could do it, what would you change your name to?",
-    "Name a famous person that you would like to be friends with.",
-    "Who are 5 famous people that you would like to have dinner with? They can either be dead or alive.",
-    "What is your biggest pet peeve?",
-    "When was the worst time that you threw up?",
-    "If you could only save one person in this room from a fire, who would it be?",
-    "Who is the most attractive person in the room?",
-    "Who is the most annoying person in the room?",
-    "Which person in the room do you think gossips the most?",
-    "What is your biggest insecurity?",
-    "What is the most expensive thing you bought that wasn’t a house or a car?",
-    "What is a common misconception about you?",
-    "What is something that you would do that people would assume you would never do?",
-    "Where is the weirdest place that you have gone to the bathroom?",
-    "What is the most embarrassing thing that your parents have caught you doing?",
-    "When was the most embarrassing time that you passed gas?",
-    "What was the most disgusting thing to ever come out of your body?",
-    "What is the most disgusting thing that you have ever had in your mouth?",
-    "How old do you think you will live to be?",
-    "What do you want to do when you are retired?",
-    "If you could live anywhere in the world, where would it be?",
-    "What do you think is your best physical quality?",
-    "Have you ever had a run-in with the law?",
-    "What can you sometimes be prejudiced about?",
-    "When is the last time you talked about someone behind their back?",
-    "Who is your least favorite friend?",
-    "Would you kiss the person on your left?",
-    "Who is the sexiest person in the room?",
-    "Do you shower every day?",
-    "Do you brush your teeth every day?",
-    "Do you floss your teeth every day?",
-    "Have you ever gotten a DUI?",
-    "What would you do if you could retire at 40?",
-    "Have you ever been tempted to cheat on someone?",
-    "Have you ever had a one night stand?",
-    "Would you ever get a tattoo? What kind of tattoo would it be?",
-    "What is your least favorite thing about your best friend?",
-    "Have you ever wanted to kill someone?",
-    "Have you ever gotten into a physical altercation with anyone?",
-    "If you could only eat one food every day for the rest of your life, what would it be?",
-    "Have you ever had feelings for a friend or family member’s significant other?",
-    "What is the worst thing that anyone has ever said about you?",
-    "What is the worst thing that somebody ever said to you?",
-    "What is your biggest fantasy?",
-    "Have you ever gone to the bathroom in the pool?",
-    "How many grand-kids do you think you will have?",
-    "Who in the group do you think is the wildest in bed?",
-    "For guys: have you ever worn lingerie?",
-    "Do you have any fetishes?",
-    "What is your idea of good s..x?",
-    "Do you masturbate?",
-    "How many times do you take care of yourself a week?",
-    "What is the most s..x that you have had in a day?",
-    "What is the longest amount of time that you have gone without intercourse?",
-    "What is your favorite position?",
-    "Have you ever given oral s..x?",
-    "Have you ever received oral s..x?",
-    "Have you ever been in a threesome? Would you ever?",
-    "How about an orgy?",
-    "Would you ever swap partners with anyone?",
-    "Have you ever stolen money from your parents?",
-    "For girls: what bra size do you wear?",
-    "For girls: what is your worst period story?",
-    "Do you watch 'adult movies'?",
-    "Have you ever taken nude photos or videos of yourself?",
-    "If you watch x-rated movies, what type is your favorite?",
-    "Do you have a favorite 'adult' store?",
-    "Could you live without watching 'adult movies'?",
-    "Could you live without having s..x for the rest of your life?",
-    "Have you ever tried to get out of a speeding ticket?",
-    "Who is the craziest person that you know (in person?)",
-    "When was a time that you completely lost it?",
-    "What kind of pajamas do you wear?",
-    "Have you ever stolen something from a store?",
-    "Have you ever met a celebrity?",
-    "What is an unpopular opinion that you have?",
-    "If you weren’t here in this room right now, what would you probably be doing?",
-    "What kind of person would you want to marry one day?",
-    "What do you think happens after we die?",
-    "Are you afraid of dying?",
-    "What is the best thing that you have ever had to eat?",
-    "What is your favorite movie and why?",
-    "What is the silliest thing that you have ever done?",
-    "What is your favorite thing about the opposite gender (or the gender that you are attracted to)?",
-    "Who would play you in a movie about your life?",
-    "If you ever wrote a memoir, what would the title be?",
-    "What is your favorite kind of music to listen to?",
-    "Name one thing on your bucket list.",
-    "If you could have someone else’s life for one day, who would it be?",
-    "If you could kiss one celebrity, who would it be?",
-    "If you could say anything to one person in your life without any consequences, what would it be?",
-    "If you had to pick one person in your immediate family to survive, who would it be?",
-    "If you could choose a way to die, what would it be?",
-    "How many romantic interests do you think you will have for the rest of your life?",
-    "Talk about the craziest thing that you overheard.",
-    "Was there ever a time in your life that you thought you were going to die?",
-    "What was one of the best moments of your life?",
-    "What is your best childhood memory?",
-    "What is your worst childhood memory?",
-    "What kind of parent do you think you will be?",
-    "What is the most romantic thing that you have ever done?",
-    "What is the most romantic thing that has ever been done for you?",
-    "What was your worst workplace experience?",
-    "What is the most amount of time that you have ever spent in a hospital?",
-    "Where is the furthest place that you have ever traveled to?",
-    "Have you ever broken a bone?",
-    "Have you ever gotten stitches?",
-    "What is the longest amount of time that you have ever been away from home?",
-    "What is your most embarrassing puberty-related story?",
-    "Where did you used to think babies come from?",
-    "How did you find out that Santa Claus is not real?",
-    "What is your religion or spirituality?",
-    "What is the coolest thing that you have ever done at a job?",
-    "What is one thing that you have always wanted to do but have not gotten around to yet?",
-    "Do you have any irrational fears?",
-    "What is the sweetest thing that someone could do for you?",
-    "Have you ever had a crush on a co-worker?",
-    "Have you ever let someone take the blame for something you did? What happened?",
-    "Tell us about something really crazy that you were able to get away with."
+# Danh sách vai trò
+ROLES = [
+    "Bác sĩ", "Bảo vệ", "Người canh gác", "Quản Ngục", "Kỹ nữ", "Thầy Bói",
+    "Thầy Đồng", "Hoa Bé Con", "Cậu Bé Miệng Bự", "Bán Sói", "Sói trẻ",
+    "Sói Hắc Ám", "Sói Hộ Vệ", "Sói Tiên Tri", "Sói đầu đàn", "Thằng Ngố",
+    "Thợ Săn Người", "Tin tặc", "Kẻ Phóng Hoả"
 ]
 
-dare_norm = [
-    "Do a free-style rap for the next minute.",
-    "Let another person post a status on your behalf.",
-    "Hand over your phone to another player who can send a single text saying anything they want to anyone they want.",
-    "Let the other players go through your phone for one minute.",
-    "Smell another player's armpit.",
-    "Smell another player's bare foot.",
-    "Eat a bite of a banana peel.",
-    "Do an impression of another player until someone can figure out who it is.",
-    "Say 'pickles' at the end of every sentence until it's your turn again.",
-    "Imitate a YouTube star until another player guesses who you're portraying.",
-    "Act like a chicken until your next turn.",
-    "Talk in a British accent until your next turn.",
-    "Call a friend, pretend it's their birthday, and sing them Happy Birthday to You.",
-    "Name a famous person that looks like each player in the room.",
-    "Show us your best dance moves.",
-    "Eat a packet of hot sauce straight.",
-    "Let another person draw a tattoo on your back with a permanent marker.",
-    "Put on a blindfold and touch the other players' faces until you can figure out who's who.",
-    "Serenade the person to your right for a full minute.",
-    "Do 20 squats.",
-    "Let the other players redo your hairstyle.",
-    "Gulp down a raw egg.",
-    "Dump out your purse, backpack, or pockets and do a show and tell of what's inside.",
-    "Let the player to your right redo your makeup.",
-    "Do a prank call on one of your family members.",
-    "Let another player create a hat out of toilet paper — and you've got to wear it for the rest of the game.",
-    "Do a plank for a full minute.",
-    "Let someone give you a wedgie.",
-    "Put five cubes in your mouth (you can't chew them, just let them melt—brrr).",
-    "Bark like a dog.",
-    "Draw your favorite movie and have the other person guess it (Pictionary-style).",
-    "Repeat everything the person to your right says until your next turn.",
-    "Demonstrate how you style your hair in the mirror (without actually using the mirror).",
-    "Play air guitar for one minute.",
-    "Empty a glass of cold water onto your head outside.",
-    "Lay on the floor and act like a sizzling piece of bacon.",
-    "In the next ten minutes, find a way to scare another player and make it a surprise.",
-    "Lick a bar of soap.",
-    "Eat a teaspoon of mustard.",
-    "Put an ice cube in your pocket until it melts.",
-    "Try to chug a bottle of beer in less than 20 seconds.",
-    "Take a shot of barbecue sauce.",
-    "Eat half a teaspoon of wasabi.",
-    "Go to the nearest fridge, pour a little bit of all the liquids found (not including medication) into a glass, stir it, and drink it all up.",
-    "Pledge your undying love to the person directly across from you for a minute.",
-    "Make an unflattering picture of yourself your Facebook profile picture for at least a day.",
-    "Let someone spoon-feed you with something messy (like yogurt or applesauce) while blindfolded for 2 minutes.",
-    "Turn off your phone for the rest of the game.",
-    "Let everyone in the room dress you up, do your makeup, and your hair. Then take a picture and set it as your new social media profile picture for at least one day.",
-    "Pick your nose in front of everyone.",
-    "Let someone in the room write whatever they want from your Facebook account.",
-    "Do the worm.",
-    "Slap the person on your left.",
-    "Spank the person on your right.",
-    "Smell the foot of the person on your left.",
-    "Use a pickup line on the person on your right.",
-    "Serenade someone in the room.",
-    "Wear someone else’s worn socks on your head for the rest of the game.",
-    "Wear someone else’s shoes as mittens for the next 10 minutes.",
-    "Put your toe in your mouth. If you cannot do that, then you have to put someone else’s toe in your mouth.",
-    "Do the robot.",
-    "Do 50 sit ups.",
-    "Jog in place very slowly for the next 3 minutes.",
-    "Say something very dirty to the person on your left.",
-    "Speak in an accent for the rest of the game (examples include British, Southern American, Caribbean, German, and Italian).",
-    "Pick up the person next to you.",
-    "Carry the person next to you across the room.",
-    "Swallow a tablespoon of ketchup, mustard, or something similar.",
-    "Talk for 5 minutes without stopping.",
-    "Put your underwear on top of your head.",
-    "Lick the side of someone’s face.",
-    "Perform a rap for everyone in the room.",
-    "Try to put your foot behind your head.",
-    "Speak in pig Latin for the rest of the game.",
-    "Switch clothes with someone of the opposite gender for the rest of the game.",
-    "Pretend to spin an imaginary hula hoop around your waist for the next 2 minutes.",
-    "Send a love letter to someone on Facebook.",
-    "Send someone a message that says, 'I know what you did last summer.'",
-    "Wear your underwear outside of your clothes.",
-    "Streak across the room.",
-    "Crack a raw egg on your head.",
-    "Post a video of you singing and share it on your social media account.",
-    "Call someone on your phone and talk to them for 5 minutes without telling them that you are playing Truth or Dare.",
-    "Snort like a pig at the end of each sentence you say for the rest of the game.",
-    "Sing a song for 2 minutes, but meow instead of singing the words.",
-    "Strip down to your underwear and make an outfit for yourself using no more than 2 rolls of toilet paper.",
-    "Sit on someone’s lap for 10 minutes.",
-    "Slow dance with the person on your left for the duration of one song.",
-    "Give a kiss to each player in the room (a peck on the lips is okay).",
-    "Let everyone in the room give you a makeup makeover.",
-    "Let each person in the room paint your nails.",
-    "Eat a piece of food off of someone’s face without using your hands.",
-    "Do a belly dance for one minute for everyone in the room.",
-    "Give a foot massage to the person on your left.",
-    "Go outside and wrap toilet paper around your neighbor's tree.",
-    "Let the person next to you give you a haircut using only their left hand.",
-    "Go outside and do a chicken dance for 5 minutes.",
-    "Cut 5 onions into little pieces.",
-    "Eat a couple cloves of raw garlic.",
-    "Go outside and pretend that you are an airplane for 10 minutes.",
-    "Go to your neighbor's house and say you are sorry for hitting their dog.",
-    "Go to your neighbor's house and pretend to be Adele and sing 'Hello' behind their door.",
-    "Go and fart in front of your teacher or boss.",
-    "Spit on someone.",
-    "Take a coin out of your wallet and lick it.",
-    "Do a crazy dance outside in a busy intersection.",
-    "Touch your friend's nose with your tongue only.",
-    "Prank call someone and pretend they are your girlfriend/boyfriend and propose to them.",
-    "Bark like a dog for 10 minutes.",
-    "Wax your arms in front of everyone.",
-    "Kiss the person in the room who is the same gender. Do it passionately.",
-    "Stand or jump on one foot for 5 minutes.",
-    "Go to your neighbor's house and tell them a joke.",
-    "Cry loudly in front of everyone.",
-    "Try to do stand-up comedy in front of the other players.",
-    "Imitate any animal of your choice for several minutes.",
-    "Let the person on your left draw a mustache on your skin with lipstick only.",
-    "Let the person on your right do your makeup blindfolded.",
-    "Show your whole browsing history to the players in the room.",
-    "Disclose your girlfriend’s/boyfriend’s name online.",
-    "Call your best friend and make them believe that you are gay.",
-    "Try to be a ballerina and dance for 5 minutes.",
-    "Say 'I love you' 50 times.",
-    "Take a shower with all your clothes on.",
-    "Call your best friend and tell them you hate them.",
-    "Propose to the person on your left.",
-    "Call your mom and cry on the phone telling her that you just got dumped.",
-    "Pretend that you are enemies with the person on your right.",
-    "Don’t talk for the rest of the game.",
-    "Don’t talk to anyone for 30 minutes.",
-    "Do a seductive dance in front of everyone.",
-    "Use a poetry form of talking for the rest of the game.",
-    "Call your dad and tell him that you are going to elope in Vegas.",
-    "Go on the street and wear your underwear over your pants for 10 minutes while yelling that you are Superman.",
-    "Go outside and bed for money.",
-    "Prank call someone and make them believe they have won the lottery.",
-    "French kiss the person on your left.",
-    "Prank call someone and tell them that you are horny.",
-    "Be rude to your girlfriend/boyfriend for a day.",
-    "Go outside and propose to the first person who passes by.",
-    "Get your back hair waxed in front of the other players.",
-    "Behave like a lesbian for the rest of the game.",
-    "Repeat 'I will do it' 100 times.",
-    "Try to drink 3 glasses of milk in 1 minute.",
-    "Call your mom and ask her to cook the food that you hate the most.",
-    "Try to laugh continuously for the rest of the game.",
-    "Remove any of your 4 articles of clothing.",
-    "Have a 5-minute conversation on any topic.",
-    "Go to your neighbor and ask if they could give you a condom.",
-    "Remove your pants/skirt for the rest of the game.",
-    "Give a 20-minute lecture on safe sex.",
-    "Try to touch your nose with your tongue.",
-    "Do a belly dance.",
-    "Join the Discord server https://discord.gg/mwaPKHypGF and ask for $5.",
-    "Mimic the Joker from a Batman movie.",
-    "Call your closest friend and invite them for a threesome."
-]
+# Danh sách người chơi
+players = {}
 
+# Trạng thái trò chơi
+game_started = False
+night_time = False
+votes = {}
+protected = {} # Lưu trữ người được bảo vệ
+jailed = {} # Lưu trữ người bị giam
+arsoned = [] # Lưu trữ người chơi bị tẩm xăng
+target_player = {} # Lưu trữ mục tiêu của thợ săn người
+revealed_roles = {} # lưu trữ vai trò đã lộ của người chơi
+
+# Tải lịch sử chơi từ file JSON (nếu có)
+try:
+    with open('history.json', 'r') as f:
+        history = json.load(f)
+except FileNotFoundError:
+    history = {}
+
+bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents.all())
 
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user} (ID: {bot.user.id})")
-    await bot.change_presence(activity=discord.Game('Check out BluClub.cf'))
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
-    except Exception as e:
-        print("Error syncing commands:", e)
+    print(f'{bot.user.name} đã sẵn sàng!')
 
-@bot.command(name="truth", help="Get a truth prompt")
-async def truth(ctx):
-    embed = discord.Embed(
-        title=f"{ctx.author.name}, {random.choice(truth_norm)}",
-        colour=discord.Colour.green()
-    )
-    await ctx.send(embed=embed)
+@bot.command(name='start', help='Bắt đầu trò chơi Ma Sói.')
+async def start(ctx, *player_mentions):
+    global game_started, players, night_time, votes, protected, jailed, arsoned, target_player, revealed_roles
 
-@bot.command(name="dare", help="Get a dare prompt")
-async def dare(ctx):
-    embed = discord.Embed(
-        title=f"{ctx.author.name}, {random.choice(dare_norm)}",
-        colour=discord.Colour.red()
-    )
-    await ctx.send(embed=embed)
+    if game_started:
+        await ctx.send("Trò chơi đã bắt đầu rồi!")
+        return
 
-@bot.command(name="runit", help="Spam messages with numbers")
-async def runit(ctx):
-    for i in range(500):
-        await ctx.send(i)
+    if len(player_mentions) != 16:
+        await ctx.send("Cần 16 người chơi để bắt đầu trò chơi.")
+        return
 
-@bot.tree.command(name="truth", description="Get a truth prompt")
-async def slash_truth(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title=f"{interaction.user.name}, {random.choice(truth_norm)}",
-        colour=discord.Colour.green()
-    )
-    await interaction.response.send_message(embed=embed)
+    players = {}
+    available_roles = ROLES[:]
 
-@bot.tree.command(name="dare", description="Get a dare prompt")
-async def slash_dare(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title=f"{interaction.user.name}, {random.choice(dare_norm)}",
-        colour=discord.Colour.red()
-    )
-    await interaction.response.send_message(embed=embed)
+    for mention in player_mentions:
+        player = ctx.guild.get_member(int(mention[3:-1]))
+        if player:
+            role = random.choice(available_roles)
+            players[player.id] = {"role": role, "alive": True}
+            available_roles.remove(role)
+        else:
+            await ctx.send(f"Không tìm thấy người chơi {mention}.")
+            return
 
-keep_alive() 
-bot.run('Bot Token')  # Replace 'Bot Token' with your actual bot token
+    game_started = True
+    night_time = True
+    votes = {}
+    protected = {}
+    jailed = {}
+    arsoned = []
+    target_player = {}
+    revealed_roles = {}
+    
+    #random target cho thợ săn người
+    target_player[ctx.author.id] = random.choice(list(players.keys()))
+
+    await ctx.send("Trò chơi Ma Sói đã bắt đầu! Đêm đầu tiên đã đến.")
+
+    for player_id, player_info in players.items():
+        player = bot.get_user(player_id)
+        await player.send(f"Vai trò của bạn là: {player_info['role']}")
+        if player_info['role'] == "Thợ Săn Người":
+            await player.send(f"Mục tiêu của bạn là: {bot.get_user(target_player[ctx.author.id]).name}")
+
+    await night_phase(ctx)
+
+# Thêm các lệnh cho từng vai trò (Bác sĩ, Bảo vệ, Người canh gác, v.v.)
+# ... (Thêm các lệnh cho từng vai trò) ...
+
+@bot.command(name='vote', help='Bầu chọn người chơi bị nghi ngờ.')
+async def vote(ctx, player_mention):
+    global votes
+
+    if not game_started or night_time:
+        await ctx.send("Lệnh này chỉ dùng vào ban ngày!")
+        return
+
+    target_player = ctx.guild.get_member(int(player_mention[3:-1]))
+    if target_player and target_player.id in players and players[target_player.id]["alive"]:
+        if ctx.author.id not in votes:
+            votes[ctx.author.id] = target_player.id
+            await ctx.send(f"{ctx.author.name} đã bầu chọn {target_player.name}!")
+        else:
+            await ctx.send("Bạn đã bầu chọn rồi!")
+    else:
+        await ctx.send("Người chơi không hợp lệ hoặc đã chết!")
+
+@bot.command(name='end', help='Kết thúc trò chơi.')
+async def end(ctx):
+    global game_started, players
+
+    if not game_started:
+        await ctx.send("Trò chơi chưa bắt đầu!")
+        return
+
+    game_started = False
+    players = {}
+    await ctx.send("Trò chơi đã kết thúc.")
+
+async def night_phase(ctx):
+    global night_time
+
+    await asyncio.sleep(60)  # Đêm kéo dài 60 giây
+    night_time = False
+    await ctx.send("Bình minh đã đến!")
+    await day_phase(ctx)
+
+async def day_phase(ctx):
+    global night_time, votes
+
+    await asyncio.sleep(60)  # Ngày kéo dài 60 giây
+    night_time = True
+    await ctx.send("Đêm đã đến!")
+
+    # Xử lý bầu chọn
+    if votes:
+        target = max(set(votes.values()), key=list(votes.values()).count)
+        players[target]["alive"] = False
+        await ctx.send(f"{bot.get_user(target).name} đã bị dân làng treo cổ!")
+        votes = {}
+
+    await night_phase(ctx)
+
+bot.run(TOKEN)
